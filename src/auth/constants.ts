@@ -1,4 +1,4 @@
 export const jwtConstants = {
-  secret: 'Math attack backend secret key',
-  refresh_secret: 'Refresh token from math attack',
+  secret: 'Word quiz backend secret key',
+  refresh_secret: 'Refresh token from word quiz',
 };

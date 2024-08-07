@@ -15,7 +15,7 @@ export class Room {
   members: string[];
 
   @Prop({type: [{type: Number}]})
-  games: number[];
+  topics: number[];
 
   @Prop({type: String})
   user1: string;

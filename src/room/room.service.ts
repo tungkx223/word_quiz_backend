@@ -171,7 +171,7 @@ export class RoomService {
           outcome: 1,
           is_elo: room.is_elo,
           user1_set: 0,
-          user2_set: 3,
+          user2_set: 2,
           user1_oldElo: user1_oldElo,
           user1_newElo: user1_newElo,
           user2_oldElo: user2_oldElo,
@@ -198,7 +198,7 @@ export class RoomService {
         data = {
           outcome: 0,
           is_elo: room.is_elo,
-          user1_set: 3,
+          user1_set: 2,
           user2_set: 0,
           user1_oldElo: user1_oldElo,
           user1_newElo: user1_newElo,
@@ -234,12 +234,12 @@ export class RoomService {
     // 10 chu de...
     var numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
     numbers.sort(() => Math.random() - 0.5);
-    var games = numbers.slice(0, 5);
+    var topics = numbers.slice(0, 3);
 
     return {
       code: 1,
       data: {
-        games: games,
+        topics: topics,
         roomKey: roomKey,
         user1: {
           username: user1.username,
@@ -260,7 +260,7 @@ export class RoomService {
     }
 
     const room = await this.roomModel.findOne({key: roomKey});
-    if (!room || room.current_round >= 5) {
+    if (!room || room.current_round >= 3) {
       return {
         code: 0,
         data: {},
@@ -372,7 +372,7 @@ export class RoomService {
   }
 
   async userSubmit(roomKey: string, userCode: number, setCode: number, addedPoint: number) {
-    if (userCode >= 2 || setCode >= 5) {
+    if (userCode >= 2 || setCode >= 3) {
       return {
         code: 0,
         data: {},
@@ -441,7 +441,7 @@ export class RoomService {
       }
     }
 
-    if (user1_setWon >= 3) {
+    if (user1_setWon >= 2) {
       await this.roomModel.findOneAndUpdate(
         {key: roomKey},
         {is_end_game: true},
@@ -484,7 +484,7 @@ export class RoomService {
       }
     }
 
-    if (user2_setWon >= 3) {
+    if (user2_setWon >= 2) {
       await this.roomModel.findOneAndUpdate(
         {key: roomKey},
         {is_end_game: true},
@@ -527,7 +527,7 @@ export class RoomService {
       }
     }
 
-    if (user1_setWon === 2.5 && user2_setWon === 2.5) {
+    if (user1_setWon === 1.5 && user2_setWon === 1.5) {
       await this.roomModel.findOneAndUpdate(
         {key: roomKey},
         {is_end_game: true},

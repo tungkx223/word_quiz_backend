@@ -425,7 +425,7 @@ export class RoomService {
 
   async getGameResult(roomKey: string) {
     const room = await this.roomModel.findOne({key: roomKey});
-    if (!room || room.is_end_game) {
+    if (!room) {
       return {
         code: 0,
         data: {},
@@ -434,7 +434,8 @@ export class RoomService {
 
     var user1_setWon = await this.playerService.getSetWon(room.user1);
     var user2_setWon = await this.playerService.getSetWon(room.user2);
-    if (user1_setWon === -1 || user2_setWon === -1) {
+    
+    if (user1_setWon === -1 || user2_setWon === -1 || room.is_end_game) {
       return {
         code: 0,
         data: {},

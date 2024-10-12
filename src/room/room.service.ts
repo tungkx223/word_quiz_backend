@@ -132,9 +132,16 @@ export class RoomService {
       };
     }
 
-    const members = room.members;
+    const members = [...room.members];
+    const newMembers = room.members;
     const index = members.indexOf(clientUID);
     var data = {};
+
+    newMembers.splice(index, 1);
+    await this.roomModel.findOneAndUpdate(
+      {key: roomKey},
+      {members: newMembers}
+    )
 
     // thoat game khi chua ket thuc game...
     if (!room.is_end_game) {
@@ -143,76 +150,136 @@ export class RoomService {
         {is_end_game: true},
       );
       
-      var user1 = await this.userModel.findById(room.members[0]);
-      var user2 = await this.userModel.findById(room.members[1]);
+      var user1 = await this.userModel.findById(members[0]);
+      var user2 = await this.userModel.findById(members[1]);
       
       var user1_oldElo = user1.elo;
       var user2_oldElo = user2.elo;
   
       if (index === 0) {
         await this.playerService.leaveRoom(room.user1);
-        var user1_newElo = this.newElo(user1_oldElo, user2_oldElo, 0, room.is_elo);
-        var user2_newElo = this.newElo(user2_oldElo, user1_oldElo, 1, room.is_elo);
+        var user1_setWon = await this.playerService.getSetWon(room.user1);
+
+        if (user1_setWon >= 1.5) {
+          var user1_newElo = this.newElo(user1_oldElo, user2_oldElo, 0.5, room.is_elo);
+          var user2_newElo = this.newElo(user2_oldElo, user1_oldElo, 0.5, room.is_elo);
   
-        var user1_lose = user1.lose + 1;
-        var user2_win = user2.win + 1;
+          var user1_draw = user1.draw + 1;
+          var user2_draw = user2.draw + 1;
   
-        await this.userModel.findByIdAndUpdate(
-          room.members[0],
-          {elo: user1_newElo, lose: user1_lose},
-        );
+          await this.userModel.findByIdAndUpdate(
+            members[0],
+            {elo: user1_newElo, draw: user1_draw},
+          );
   
-        await this.userModel.findByIdAndUpdate(
-          room.members[1],
-          {elo: user2_newElo, win: user2_win},
-        );
+          await this.userModel.findByIdAndUpdate(
+            members[1],
+            {elo: user2_newElo, draw: user2_draw},
+          );
   
-        data = {
-          outcome: 1,
-          is_elo: room.is_elo,
-          user1_set: 0,
-          user2_set: 2,
-          user1_oldElo: user1_oldElo,
-          user1_newElo: user1_newElo,
-          user2_oldElo: user2_oldElo,
-          user2_newElo: user2_newElo,
-        }      
+          data = {
+            outcome: 2,
+            is_elo: room.is_elo,
+            is_forfeit: true,
+            user1_set: 1.5,
+            user2_set: 1.5,
+            user1_oldElo: user1_oldElo,
+            user1_newElo: user1_newElo,
+            user2_oldElo: user2_oldElo,
+            user2_newElo: user2_newElo,
+          }
+        } else {
+          var user1_newElo = this.newElo(user1_oldElo, user2_oldElo, 0, room.is_elo);
+          var user2_newElo = this.newElo(user2_oldElo, user1_oldElo, 1, room.is_elo);
+  
+          var user1_lose = user1.lose + 1;
+          var user2_win = user2.win + 1;
+  
+          await this.userModel.findByIdAndUpdate(
+            members[0],
+            {elo: user1_newElo, lose: user1_lose},
+          );
+  
+          await this.userModel.findByIdAndUpdate(
+            members[1],
+            {elo: user2_newElo, win: user2_win},
+          );
+  
+          data = {
+            outcome: 1,
+            is_elo: room.is_elo,
+            is_forfeit: true,
+            user1_set: 0,
+            user2_set: 2,
+            user1_oldElo: user1_oldElo,
+            user1_newElo: user1_newElo,
+            user2_oldElo: user2_oldElo,
+            user2_newElo: user2_newElo,
+          }
+        }
       } else {
         await this.playerService.leaveRoom(room.user2);
-        var user1_newElo = this.newElo(user1_oldElo, user2_oldElo, 1, room.is_elo);
-        var user2_newElo = this.newElo(user2_oldElo, user1_oldElo, 0, room.is_elo);
+        var user2_setWon = await this.playerService.getSetWon(room.user2);
+
+        if (user2_setWon >= 1.5) {
+          var user1_newElo = this.newElo(user1_oldElo, user2_oldElo, 0.5, room.is_elo);
+          var user2_newElo = this.newElo(user2_oldElo, user1_oldElo, 0.5, room.is_elo);
   
-        var user1_win = user1.win + 1;
-        var user2_lose = user2.lose + 1;
+          var user1_draw = user1.draw + 1;
+          var user2_draw = user2.draw + 1;
   
-        await this.userModel.findByIdAndUpdate(
-          room.members[0],
-          {elo: user1_newElo, win: user1_win},
-        );
+          await this.userModel.findByIdAndUpdate(
+            members[0],
+            {elo: user1_newElo, draw: user1_draw},
+          );
   
-        await this.userModel.findByIdAndUpdate(
-          room.members[1],
-          {elo: user2_newElo, lose: user2_lose},
-        );
+          await this.userModel.findByIdAndUpdate(
+            members[1],
+            {elo: user2_newElo, draw: user2_draw},
+          );
   
-        data = {
-          outcome: 0,
-          is_elo: room.is_elo,
-          user1_set: 2,
-          user2_set: 0,
-          user1_oldElo: user1_oldElo,
-          user1_newElo: user1_newElo,
-          user2_oldElo: user2_oldElo,
-          user2_newElo: user2_newElo,
+          data = {
+            outcome: 2,
+            is_elo: room.is_elo,
+            is_forfeit: true,
+            user1_set: 1.5,
+            user2_set: 1.5,
+            user1_oldElo: user1_oldElo,
+            user1_newElo: user1_newElo,
+            user2_oldElo: user2_oldElo,
+            user2_newElo: user2_newElo,
+          }
+        } else {
+          var user1_newElo = this.newElo(user1_oldElo, user2_oldElo, 1, room.is_elo);
+          var user2_newElo = this.newElo(user2_oldElo, user1_oldElo, 0, room.is_elo);
+  
+          var user1_win = user1.win + 1;
+          var user2_lose = user2.lose + 1;
+  
+          await this.userModel.findByIdAndUpdate(
+            members[0],
+            {elo: user1_newElo, win: user1_win},
+          );
+  
+          await this.userModel.findByIdAndUpdate(
+            members[1],
+            {elo: user2_newElo, lose: user2_lose},
+          );
+  
+          data = {
+            outcome: 0,
+            is_elo: room.is_elo,
+            is_forfeit: true,
+            user1_set: 2,
+            user2_set: 0,
+            user1_oldElo: user1_oldElo,
+            user1_newElo: user1_newElo,
+            user2_oldElo: user2_oldElo,
+            user2_newElo: user2_newElo,
+          };
         }
       }
     }
-    
-    members.splice(index, 1);
-    await this.roomModel.findOneAndUpdate(
-      {key: roomKey},
-      {members}
-    )
     
     return {
       code: 1,
@@ -253,7 +320,7 @@ export class RoomService {
     }
   }
 
-  async userEndSet(roomKey: string, userCode: number) {
+  async userEndSet(roomKey: string, userCode: number, setCode: number) {
     if (userCode >= 2) return {
       code: 0, 
       data: {},
@@ -264,6 +331,35 @@ export class RoomService {
       return {
         code: 0,
         data: {},
+      }
+    }
+
+    // set da ket thuc nhung nguoi choi chua nhan duoc thong bao...
+    // gui thong bao muon cua set cu...
+    if (setCode < room.current_round) {
+      var u1point = user1.point[setCode];
+      var u2point = user2.point[setCode];
+      var outcome: number;
+
+      if (u1point > u2point) {
+        // user1 thắng
+        outcome = 0;
+      } else if (u2point > u1point) {
+        // user2 thắng
+        outcome = 1;
+      } else {
+        // kết quả hòa
+        outcome = 2;
+      }
+
+      return {
+        code: 1,
+        data: {
+          user1_point: u1point,
+          user2_point: u2point,
+          outcome: outcome,
+          setCode: setCode,
+        },
       }
     }
 
@@ -475,6 +571,7 @@ export class RoomService {
         data: {
           outcome: 0,
           is_elo: room.is_elo,
+          is_forfeit: false,
           user1_set: user1_setWon,
           user2_set: user2_setWon,
           user1_oldElo: user1_oldElo,
@@ -518,6 +615,7 @@ export class RoomService {
         data: {
           outcome: 1,
           is_elo: room.is_elo,
+          is_forfeit: false,
           user1_set: user1_setWon,
           user2_set: user2_setWon,
           user1_oldElo: user1_oldElo,
@@ -561,6 +659,7 @@ export class RoomService {
         data: {
           outcome: 2,
           is_elo: room.is_elo,
+          is_forfeit: false,
           user1_set: user1_setWon,
           user2_set: user2_setWon,
           user1_oldElo: user1_oldElo,
